@@ -20,6 +20,7 @@ const adminApi = {
   deleteMessage: (id) => axiosClient.delete(`/admin/messages/${id}`),
 
   // Users
+  searchUsers: (search) => axiosClient.get('/admin/users', { params: { search } }),
   getAllUsers: (params) => axiosClient.get('/admin/users', { params }),
   createUser: (data) => axiosClient.post('/admin/users', data),
   updateUser: (id, data) => axiosClient.put(`/admin/users/${id}`, data),

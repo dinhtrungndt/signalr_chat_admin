@@ -146,9 +146,14 @@ const GroupDetailPage = () => {
   const [tab, setTab] = useState('members');
   const [page, setPage] = useState(1);
   const [addUserId, setAddUserId] = useState('');
+  const [addSearchQuery, setAddSearchQuery] = useState('');
+  const [addSelectedUser, setAddSelectedUser] = useState(null);
+  const [addRole, setAddRole] = useState('MEMBER');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [deletingMsgId, setDeletingMsgId] = useState(null);
   const [deletingMemberId, setDeletingMemberId] = useState(null);
   const chatEndRef = useRef(null);
+  const searchRef = useRef(null);
 
   const gid = parseInt(groupId);
 
@@ -157,6 +162,25 @@ const GroupDetailPage = () => {
     queryKey: ['admin-group', gid],
     queryFn: () => adminApi.getGroupDetail(gid).then(r => r.data.data),
   });
+
+  // Tìm kiếm người dùng để thêm vào nhóm
+  const { data: searchResults } = useQuery({
+    queryKey: ['admin-search-users', addSearchQuery],
+    queryFn: () => adminApi.searchUsers(addSearchQuery).then(r => r.data.data),
+    enabled: addSearchQuery.length >= 2,
+    staleTime: 10000,
+  });
+
+  // Click bên ngoài dropdown => ẩn
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const { data: msgData, isLoading: loadingMsgs } = useQuery({
     queryKey: ['admin-group-messages', gid, page],
@@ -226,9 +250,12 @@ const GroupDetailPage = () => {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: (username) => adminApi.addMember(gid, { username }),
+    mutationFn: ({ username, role }) => adminApi.addMember(gid, { username, role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+      setAddSearchQuery('');
+      setAddSelectedUser(null);
+      setAddRole('MEMBER');
       setAddUserId('');
     },
   });
@@ -299,22 +326,106 @@ const GroupDetailPage = () => {
       {/* ===== Members Tab ===== */}
       {tab === 'members' && (
         <div className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden">
-          {/* Add member */}
-          <div className="px-6 py-4 border-b border-slate-700/30 flex gap-3">
-            <input
-              value={addUserId}
-              onChange={e => setAddUserId(e.target.value)}
-              placeholder="Nhập Username để thêm vào nhóm..."
-              className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
-            />
-            <button
-              onClick={() => addUserId && addMemberMutation.mutate(addUserId.trim())}
-              disabled={!addUserId || addMemberMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition"
-            >
-              <UserPlus className="w-4 h-4" />
-              {addMemberMutation.isPending ? 'Đang thêm...' : 'Thêm'}
-            </button>
+          {/* Add member - Search autocomplete + Role picker */}
+          <div className="px-6 py-4 border-b border-slate-700/30">
+            <div className="flex gap-3 items-end">
+              {/* Search input + dropdown */}
+              <div className="flex-1 relative" ref={searchRef}>
+                <label className="text-xs text-slate-500 mb-1 block">Tìm người dùng</label>
+                {addSelectedUser ? (
+                  <div className="flex items-center gap-2 bg-slate-800 border border-indigo-500/50 rounded-xl px-3 py-2">
+                    {addSelectedUser.avatar ? (
+                      <img src={`${SOCKET_URL}${addSelectedUser.avatar}`} alt="" className="w-6 h-6 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-indigo-600/30 flex items-center justify-center text-indigo-400 font-bold text-xs">
+                        {addSelectedUser.fullName?.charAt(0)}
+                      </div>
+                    )}
+                    <span className="text-sm text-white font-medium">{addSelectedUser.fullName}</span>
+                    <span className="text-xs text-slate-500">@{addSelectedUser.username}</span>
+                    <button
+                      onClick={() => { setAddSelectedUser(null); setAddSearchQuery(''); }}
+                      className="ml-auto text-slate-500 hover:text-red-400 transition text-lg leading-none"
+                    >&times;</button>
+                  </div>
+                ) : (
+                  <input
+                    value={addSearchQuery}
+                    onChange={e => {
+                      setAddSearchQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => addSearchQuery.length >= 2 && setShowSuggestions(true)}
+                    placeholder="Gõ tên hoặc username để tìm..."
+                    className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
+                  />
+                )}
+
+                {/* Dropdown kết quả */}
+                {showSuggestions && !addSelectedUser && searchResults && searchResults.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                    {searchResults
+                      .filter(u => !members.some(m => m.userId === u.id)) // Ẩn user đã trong nhóm
+                      .map(user => (
+                        <button
+                          key={user.id}
+                          onClick={() => {
+                            setAddSelectedUser(user);
+                            setAddSearchQuery(user.username);
+                            setShowSuggestions(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-700/50 transition text-left"
+                        >
+                          {user.avatar ? (
+                            <img src={`${SOCKET_URL}${user.avatar}`} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-semibold text-sm">
+                              {user.fullName?.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium truncate">{user.fullName}</p>
+                            <p className="text-xs text-slate-500 truncate">@{user.username} · {user.unitCode || 'Không có đơn vị'}</p>
+                          </div>
+                        </button>
+                      ))}
+                    {searchResults.filter(u => !members.some(m => m.userId === u.id)).length === 0 && (
+                      <p className="px-4 py-3 text-sm text-slate-500 text-center">Tất cả kết quả đều đã là thành viên</p>
+                    )}
+                  </div>
+                )}
+
+                {showSuggestions && !addSelectedUser && addSearchQuery.length >= 2 && searchResults && searchResults.length === 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl">
+                    <p className="px-4 py-3 text-sm text-slate-500 text-center">Không tìm thấy người dùng nào</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Role selector */}
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">Quyền</label>
+                <select
+                  value={addRole}
+                  onChange={e => setAddRole(e.target.value)}
+                  className="bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition appearance-none cursor-pointer"
+                >
+                  <option value="MEMBER">Thành viên</option>
+                  <option value="DEPUTY">Phó nhóm</option>
+                  <option value="ADMIN">Trưởng nhóm</option>
+                </select>
+              </div>
+
+              {/* Add button */}
+              <button
+                onClick={() => addSelectedUser && addMemberMutation.mutate({ username: addSelectedUser.username, role: addRole })}
+                disabled={!addSelectedUser || addMemberMutation.isPending}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition whitespace-nowrap"
+              >
+                <UserPlus className="w-4 h-4" />
+                {addMemberMutation.isPending ? 'Đang thêm...' : 'Thêm'}
+              </button>
+            </div>
           </div>
           {addMemberMutation.isError && (
             <div className="px-6 py-2 text-red-400 text-sm border-b border-slate-700/30">
