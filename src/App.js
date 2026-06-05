@@ -17,10 +17,10 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-sm">Đang xác thực...</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Đang xác thực...</p>
         </div>
       </div>
     );
@@ -31,7 +31,36 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  
+  // Xác thực người dùng
   useEffect(() => { checkAuth(); }, [checkAuth]);
+
+  // Lắng nghe cài đặt màu hệ thống và theme từ localStorage
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const applyTheme = () => {
+      const savedTheme = localStorage.getItem('dvn_admin_theme') || 'system';
+      const isDark = savedTheme === 'dark' || (savedTheme === 'system' && mediaQuery.matches);
+      
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme(); // Lần đầu tải trang
+    
+    // Lắng nghe sự kiện đổi theme thủ công từ component khác
+    window.addEventListener('theme_changed', applyTheme);
+    mediaQuery.addEventListener('change', applyTheme); // Khi hệ thống đổi màu
+    
+    return () => {
+      window.removeEventListener('theme_changed', applyTheme);
+      mediaQuery.removeEventListener('change', applyTheme);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

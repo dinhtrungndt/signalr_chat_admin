@@ -15,10 +15,10 @@ const MessageContent = ({ msg }) => {
   switch (msg.type) {
     case 'SYSTEM':
     case 'RECALLED':
-      return <p className="text-[13px] text-slate-400 italic">{msg.content}</p>;
+      return <p className="text-[13px] text-slate-500 dark:text-slate-400 italic">{msg.content}</p>;
 
     case 'TEXT':
-      return <p className="text-[14px] text-slate-200 whitespace-pre-wrap break-words">{msg.content}</p>;
+      return <p className="text-[14px] text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">{msg.content}</p>;
 
     case 'IMAGE': {
       const urls = msg.content?.split('|') || [];
@@ -62,12 +62,12 @@ const MessageContent = ({ msg }) => {
       return (
         <div className="min-w-[220px]">
           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-yellow-500/30">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-yellow-600 dark:text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
             </svg>
-            <span className="font-semibold text-[13px] text-yellow-400">Ghi chú</span>
+            <span className="font-semibold text-[13px] text-yellow-600 dark:text-yellow-400">Ghi chú</span>
           </div>
-          <p className="text-[14px] text-slate-200 whitespace-pre-wrap">{note.content}</p>
+          <p className="text-[14px] text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{note.content}</p>
         </div>
       );
     }
@@ -80,17 +80,17 @@ const MessageContent = ({ msg }) => {
       return (
         <div className={`min-w-[220px] border-l-4 border-${color}-500 pl-3 py-1`}>
           <div className="flex items-center gap-2 mb-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-${color}-400`} viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-${color}-600 dark:text-${color}-400`} viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
             </svg>
-            <span className={`font-semibold text-[13px] text-${color}-400`}>
+            <span className={`font-semibold text-[13px] text-${color}-600 dark:text-${color}-400`}>
               Nhắc hẹn
             </span>
-            {isOverdue && <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded uppercase font-bold">Quá hạn</span>}
-            {reminder.isDone && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded uppercase font-bold">Hoàn thành</span>}
+            {isOverdue && <span className="text-[10px] bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded uppercase font-bold">Quá hạn</span>}
+            {reminder.isDone && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase font-bold">Hoàn thành</span>}
           </div>
-          <p className="text-[14px] text-white font-medium">{reminder.content}</p>
-          <p className="text-slate-400 text-[11px] mt-1.5 flex items-center gap-1">
+          <p className="text-[14px] text-slate-900 dark:text-white font-medium">{reminder.content}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1.5 flex items-center gap-1">
             📅 {formatTime(reminder.dueDate)}
           </p>
         </div>
@@ -104,23 +104,23 @@ const MessageContent = ({ msg }) => {
       return (
         <div className="min-w-[260px]">
           <div className="flex items-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
               <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
               <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
             </svg>
-            <span className="font-semibold text-[13px] text-emerald-400">Bình chọn</span>
+            <span className="font-semibold text-[13px] text-emerald-600 dark:text-emerald-400">Bình chọn</span>
           </div>
-          <p className="text-white text-[14px] font-medium mb-3">{poll.question}</p>
+          <p className="text-slate-900 dark:text-white text-[14px] font-medium mb-3">{poll.question}</p>
           <div className="space-y-2">
             {poll.options?.map((opt) => {
               const count = opt.votes?.length || 0;
               const percent = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
               return (
-                <div key={opt.id} className="relative bg-slate-900/80 rounded-lg overflow-hidden border border-slate-700/50">
+                <div key={opt.id} className="relative bg-slate-100 dark:bg-slate-900/80 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700/50">
                   <div className="absolute inset-y-0 left-0 bg-emerald-500/15 transition-all" style={{ width: `${percent}%` }} />
                   <div className="relative px-3 py-2 flex justify-between items-center text-[13px]">
-                    <span className="text-slate-200">{opt.content}</span>
-                    <span className="text-emerald-400 text-[11px] font-semibold ml-3 whitespace-nowrap">
+                    <span className="text-slate-700 dark:text-slate-200">{opt.content}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold ml-3 whitespace-nowrap">
                       {count > 0 ? `${count} (${percent}%)` : '0%'}
                     </span>
                   </div>
@@ -134,7 +134,7 @@ const MessageContent = ({ msg }) => {
     }
 
     default:
-      return <p className="text-[13px] text-slate-400">[{msg.type}] {msg.content}</p>;
+      return <p className="text-[13px] text-slate-500 dark:text-slate-400">[{msg.type}] {msg.content}</p>;
   }
 };
 
@@ -269,7 +269,7 @@ const GroupDetailPage = () => {
   });
 
   if (isLoading) return (
-    <div className="p-8 text-center text-slate-400">Đang tải...</div>
+    <div className="p-8 text-center text-slate-500 dark:text-slate-400">Đang tải...</div>
   );
 
   const members = group?.userGroups || [];
@@ -280,32 +280,32 @@ const GroupDetailPage = () => {
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
-      <button onClick={() => navigate('/groups')} className="flex items-center gap-2 text-slate-400 hover:text-white transition mb-6 text-sm">
+      <button onClick={() => navigate('/groups')} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition mb-6 text-sm">
         <ArrowLeft className="w-4 h-4" /> Quay lại danh sách nhóm
       </button>
 
       <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 font-bold text-lg">
+        <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-600/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
           {group?.name?.charAt(0)}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white">{group?.name}</h1>
-          <p className="text-slate-400 text-sm">Mã đơn vị: <code className="text-indigo-400">{group?.code}</code></p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">{group?.name}</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Mã đơn vị: <code className="text-indigo-600 dark:text-indigo-400">{group?.code}</code></p>
         </div>
         <div className="ml-auto flex items-center gap-6 text-center">
           <div>
-            <p className="text-white font-bold text-lg">{members.length}</p>
+            <p className="text-slate-900 dark:text-white font-bold text-lg">{members.length}</p>
             <p className="text-slate-500 text-xs">Thành viên</p>
           </div>
           <div>
-            <p className="text-white font-bold text-lg">{group?._count?.messages || 0}</p>
+            <p className="text-slate-900 dark:text-white font-bold text-lg">{group?._count?.messages || 0}</p>
             <p className="text-slate-500 text-xs">Tin nhắn</p>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-900 border border-slate-700/50 rounded-xl p-1 w-fit mb-6">
+      <div className="flex gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-xl p-1 w-fit mb-6 transition-colors">
         {[
           { key: 'members', icon: Users, label: 'Thành viên' },
           { key: 'messages', icon: MessageSquare, label: 'Lịch sử chat' },
@@ -314,7 +314,7 @@ const GroupDetailPage = () => {
             key={key}
             onClick={() => setTab(key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === key ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+              tab === key ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -325,27 +325,27 @@ const GroupDetailPage = () => {
 
       {/* ===== Members Tab ===== */}
       {tab === 'members' && (
-        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden transition-colors">
           {/* Add member - Search autocomplete + Role picker */}
-          <div className="px-6 py-4 border-b border-slate-700/30">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700/30">
             <div className="flex gap-3 items-end">
               {/* Search input + dropdown */}
               <div className="flex-1 relative" ref={searchRef}>
                 <label className="text-xs text-slate-500 mb-1 block">Tìm người dùng</label>
                 {addSelectedUser ? (
-                  <div className="flex items-center gap-2 bg-slate-800 border border-indigo-500/50 rounded-xl px-3 py-2">
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-indigo-500/50 rounded-xl px-3 py-2">
                     {addSelectedUser.avatar ? (
                       <img src={`${SOCKET_URL}${addSelectedUser.avatar}`} alt="" className="w-6 h-6 rounded-full object-cover" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-indigo-600/30 flex items-center justify-center text-indigo-400 font-bold text-xs">
+                      <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-600/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
                         {addSelectedUser.fullName?.charAt(0)}
                       </div>
                     )}
-                    <span className="text-sm text-white font-medium">{addSelectedUser.fullName}</span>
+                    <span className="text-sm text-slate-900 dark:text-white font-medium">{addSelectedUser.fullName}</span>
                     <span className="text-xs text-slate-500">@{addSelectedUser.username}</span>
                     <button
                       onClick={() => { setAddSelectedUser(null); setAddSearchQuery(''); }}
-                      className="ml-auto text-slate-500 hover:text-red-400 transition text-lg leading-none"
+                      className="ml-auto text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition text-lg leading-none"
                     >&times;</button>
                   </div>
                 ) : (
@@ -357,13 +357,13 @@ const GroupDetailPage = () => {
                     }}
                     onFocus={() => addSearchQuery.length >= 2 && setShowSuggestions(true)}
                     placeholder="Gõ tên hoặc username để tìm..."
-                    className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
                   />
                 )}
 
                 {/* Dropdown kết quả */}
                 {showSuggestions && !addSelectedUser && searchResults && searchResults.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
                     {searchResults
                       .filter(u => !members.some(m => m.userId === u.id)) // Ẩn user đã trong nhóm
                       .map(user => (
@@ -374,17 +374,17 @@ const GroupDetailPage = () => {
                             setAddSearchQuery(user.username);
                             setShowSuggestions(false);
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-700/50 transition text-left"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left"
                         >
                           {user.avatar ? (
                             <img src={`${SOCKET_URL}${user.avatar}`} alt="" className="w-8 h-8 rounded-full object-cover" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-semibold text-sm">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-white font-semibold text-sm">
                               {user.fullName?.charAt(0)}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white font-medium truncate">{user.fullName}</p>
+                            <p className="text-sm text-slate-900 dark:text-white font-medium truncate">{user.fullName}</p>
                             <p className="text-xs text-slate-500 truncate">@{user.username} · {user.unitCode || 'Không có đơn vị'}</p>
                           </div>
                         </button>
@@ -396,7 +396,7 @@ const GroupDetailPage = () => {
                 )}
 
                 {showSuggestions && !addSelectedUser && addSearchQuery.length >= 2 && searchResults && searchResults.length === 0 && (
-                  <div className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-xl shadow-2xl">
+                  <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-2xl">
                     <p className="px-4 py-3 text-sm text-slate-500 text-center">Không tìm thấy người dùng nào</p>
                   </div>
                 )}
@@ -408,7 +408,7 @@ const GroupDetailPage = () => {
                 <select
                   value={addRole}
                   onChange={e => setAddRole(e.target.value)}
-                  className="bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition appearance-none cursor-pointer"
+                  className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition appearance-none cursor-pointer"
                 >
                   <option value="MEMBER">Thành viên</option>
                   <option value="DEPUTY">Phó nhóm</option>
@@ -434,37 +434,37 @@ const GroupDetailPage = () => {
           )}
 
           {/* Member list */}
-          <div className="divide-y divide-slate-700/30">
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/30">
             {members.map((m) => (
-              <div key={m.userId} className="px-6 py-4 flex items-center justify-between hover:bg-slate-800/30 transition">
+              <div key={m.userId} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                 <div className="flex items-center gap-3">
                   {m.user?.avatar ? (
                     <img src={`${SOCKET_URL}${m.user.avatar}`} alt="" className="w-9 h-9 rounded-full object-cover" />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-white font-semibold text-sm">
+                    <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-white font-semibold text-sm">
                       {m.user?.fullName?.charAt(0)}
                     </div>
                   )}
                   <div>
-                    <p className="text-white font-medium text-sm">{m.user?.fullName}</p>
+                    <p className="text-slate-900 dark:text-white font-medium text-sm">{m.user?.fullName}</p>
                     <p className="text-slate-500 text-xs">@{m.user?.username} · ID: {m.userId}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    m.role === 'ADMIN' ? 'bg-indigo-900/50 text-indigo-400' :
-                    m.role === 'DEPUTY' ? 'bg-amber-900/50 text-amber-400' :
-                    'bg-slate-700 text-slate-400'
+                    m.role === 'ADMIN' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400' :
+                    m.role === 'DEPUTY' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
+                    'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
                   }`}>
                     {m.role}
                   </span>
                   {deletingMemberId === m.userId ? (
                     <div className="flex items-center gap-1">
-                      <button onClick={() => removeMemberMutation.mutate(m.userId)} className="text-xs px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-500 transition">Xác nhận</button>
-                      <button onClick={() => setDeletingMemberId(null)} className="text-xs px-2 py-1 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition">Hủy</button>
+                      <button onClick={() => removeMemberMutation.mutate(m.userId)} className="text-xs px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition">Xác nhận</button>
+                      <button onClick={() => setDeletingMemberId(null)} className="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition">Hủy</button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeletingMemberId(m.userId)} className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition">
+                    <button onClick={() => setDeletingMemberId(m.userId)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                       <UserMinus className="w-4 h-4" />
                     </button>
                   )}
@@ -477,15 +477,15 @@ const GroupDetailPage = () => {
 
       {/* ===== Messages Tab - Chat Style ===== */}
       {tab === 'messages' && (
-        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden transition-colors">
           {loadingMsgs ? (
-            <div className="p-8 text-center text-slate-500">Đang tải...</div>
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400">Đang tải...</div>
           ) : messages.length === 0 ? (
-            <div className="p-8 text-center text-slate-500">Không có tin nhắn</div>
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400">Không có tin nhắn</div>
           ) : (
             <div className="flex flex-col">
               {/* Chat Area */}
-              <div className="h-[600px] overflow-y-auto p-5 space-y-4 bg-[#0c1322]" style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}>
+              <div className="h-[600px] overflow-y-auto p-5 space-y-4 bg-slate-50 dark:bg-[#0c1322] transition-colors" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
                 {sortedMessages.map((msg, idx) => {
                   // Gom nhóm: nếu cùng sender liên tiếp thì ẩn avatar/tên
                   const prevMsg = idx > 0 ? sortedMessages[idx - 1] : null;
@@ -496,12 +496,12 @@ const GroupDetailPage = () => {
                     return (
                       <div key={msg.id} className="flex justify-center group/msg">
                         <div className="flex items-center gap-2">
-                          <p className="text-[12px] text-slate-500 italic bg-slate-800/40 px-3 py-1 rounded-full">
+                          <p className="text-[12px] text-slate-500 dark:text-slate-400 italic bg-slate-200 dark:bg-slate-800/40 px-3 py-1 rounded-full">
                             {msg.content}
                           </p>
                           <button
                             onClick={() => deletingMsgId === msg.id ? deleteMsgMutation.mutate(msg.id) : setDeletingMsgId(msg.id)}
-                            className="opacity-0 group-hover/msg:opacity-100 p-1 rounded text-slate-600 hover:text-red-400 transition"
+                            className="opacity-0 group-hover/msg:opacity-100 p-1 rounded text-slate-400 hover:text-red-600 dark:text-slate-600 dark:hover:text-red-400 transition"
                             title={deletingMsgId === msg.id ? 'Nhấn lần nữa để xóa' : 'Xóa'}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -531,20 +531,20 @@ const GroupDetailPage = () => {
                         {/* Tên + Thời gian */}
                         {!isSameSender && (
                           <div className="flex items-center gap-2 mb-1 ml-1">
-                            <span className="text-white text-[13px] font-semibold">{msg.sender?.fullName}</span>
+                            <span className="text-slate-900 dark:text-white text-[13px] font-semibold">{msg.sender?.fullName}</span>
                             <span className="text-slate-500 text-[11px]">{formatTime(msg.createdAt)}</span>
                           </div>
                         )}
 
                         <div className="flex items-center gap-2">
                           {/* Bubble */}
-                          <div className="bg-slate-800/90 border border-slate-700/40 rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
+                          <div className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/40 rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm transition-colors">
                             <MessageContent msg={msg} />
                           </div>
 
                           {/* Thời gian cho tin cùng nhóm */}
                           {isSameSender && (
-                            <span className="text-slate-600 text-[10px] opacity-0 group-hover/msg:opacity-100 transition whitespace-nowrap">
+                            <span className="text-slate-400 dark:text-slate-600 text-[10px] opacity-0 group-hover/msg:opacity-100 transition whitespace-nowrap">
                               {formatShortTime(msg.createdAt)}
                             </span>
                           )}
@@ -552,14 +552,14 @@ const GroupDetailPage = () => {
                           {/* Hover Actions */}
                           <div className="opacity-0 group-hover/msg:opacity-100 transition-opacity flex items-center gap-1 flex-shrink-0">
                             {deletingMsgId === msg.id ? (
-                              <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1 border border-slate-700 shadow-lg animate-in">
-                                <button onClick={() => deleteMsgMutation.mutate(msg.id)} className="text-[11px] px-2.5 py-1 bg-red-600 text-white rounded hover:bg-red-500 transition font-medium">Xóa</button>
-                                <button onClick={() => setDeletingMsgId(null)} className="text-[11px] px-2 py-1 text-slate-400 hover:text-white transition">Hủy</button>
+                              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-lg animate-in">
+                                <button onClick={() => deleteMsgMutation.mutate(msg.id)} className="text-[11px] px-2.5 py-1 bg-red-600 text-white rounded hover:bg-red-700 dark:hover:bg-red-500 transition font-medium">Xóa</button>
+                                <button onClick={() => setDeletingMsgId(null)} className="text-[11px] px-2 py-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Hủy</button>
                               </div>
                             ) : (
                               <button
                                 onClick={() => setDeletingMsgId(msg.id)}
-                                className="p-1.5 bg-slate-800/80 border border-slate-700/50 hover:border-red-500/50 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition"
+                                className="p-1.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 hover:border-red-500/50 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-500/10 transition-colors"
                                 title="Xóa tin nhắn"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -567,14 +567,14 @@ const GroupDetailPage = () => {
                             )}
 
                             {deletingMemberId === msg.sender?.id ? (
-                              <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1 border border-slate-700 shadow-lg animate-in">
-                                <button onClick={() => removeMemberMutation.mutate(msg.sender?.id)} className="text-[11px] px-2.5 py-1 bg-orange-600 text-white rounded hover:bg-orange-500 transition font-medium">Kích</button>
-                                <button onClick={() => setDeletingMemberId(null)} className="text-[11px] px-2 py-1 text-slate-400 hover:text-white transition">Hủy</button>
+                              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-lg animate-in">
+                                <button onClick={() => removeMemberMutation.mutate(msg.sender?.id)} className="text-[11px] px-2.5 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 dark:hover:bg-orange-500 transition font-medium">Kích</button>
+                                <button onClick={() => setDeletingMemberId(null)} className="text-[11px] px-2 py-1 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Hủy</button>
                               </div>
                             ) : (
                               <button
                                 onClick={() => setDeletingMemberId(msg.sender?.id)}
-                                className="p-1.5 bg-slate-800/80 border border-slate-700/50 hover:border-orange-500/50 rounded-lg text-slate-500 hover:text-orange-400 hover:bg-orange-500/10 transition"
+                                className="p-1.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 hover:border-orange-500/50 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 dark:text-slate-500 dark:hover:text-orange-400 dark:hover:bg-orange-500/10 transition-colors"
                                 title="Kích khỏi nhóm"
                               >
                                 <UserMinus className="w-3.5 h-3.5" />
@@ -590,14 +590,14 @@ const GroupDetailPage = () => {
               </div>
 
               {/* Pagination */}
-              <div className="px-6 py-3 border-t border-slate-700/30 flex items-center justify-between bg-slate-900">
-                <p className="text-slate-500 text-xs">Trang {page} / {msgData?.totalPages || 1} · {msgData?.total?.toLocaleString()} tin nhắn</p>
+              <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700/30 flex items-center justify-between bg-white dark:bg-slate-900 transition-colors">
+                <p className="text-slate-500 dark:text-slate-400 text-xs">Trang {page} / {msgData?.totalPages || 1} · {msgData?.total?.toLocaleString()} tin nhắn</p>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 transition">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700 transition">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="text-slate-400 text-xs tabular-nums">{page}</span>
-                  <button onClick={() => setPage(p => p + 1)} disabled={page >= (msgData?.totalPages || 1)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 transition">
+                  <span className="text-slate-500 dark:text-slate-400 text-xs tabular-nums">{page}</span>
+                  <button onClick={() => setPage(p => p + 1)} disabled={page >= (msgData?.totalPages || 1)} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700 transition">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
