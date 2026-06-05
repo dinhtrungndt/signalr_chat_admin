@@ -147,6 +147,7 @@ const GroupDetailPage = () => {
   const [page, setPage] = useState(1);
   const [addUserId, setAddUserId] = useState('');
   const [addSearchQuery, setAddSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [addSelectedUser, setAddSelectedUser] = useState(null);
   const [addRole, setAddRole] = useState('MEMBER');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -163,11 +164,18 @@ const GroupDetailPage = () => {
     queryFn: () => adminApi.getGroupDetail(gid).then(r => r.data.data),
   });
 
-  // Tìm kiếm người dùng để thêm vào nhóm
+  // Tìm kiếm người dùng để thêm vào nhóm (Debounce)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(addSearchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [addSearchQuery]);
+
   const { data: searchResults } = useQuery({
-    queryKey: ['admin-search-users', addSearchQuery],
-    queryFn: () => adminApi.searchUsers(addSearchQuery).then(r => r.data.data),
-    enabled: addSearchQuery.length >= 2,
+    queryKey: ['admin-search-users', debouncedSearchQuery],
+    queryFn: () => adminApi.searchUsers(debouncedSearchQuery).then(r => r.data.data),
+    enabled: debouncedSearchQuery.length >= 2,
     staleTime: 10000,
   });
 
@@ -211,7 +219,13 @@ const GroupDetailPage = () => {
         socket.emit('joinNewGroupRoom', gid);
       });
 
-      const handleNewData = () => queryClient.invalidateQueries({ queryKey: ['admin-group-messages', gid] });
+      let timeoutId;
+      const handleNewData = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['admin-group-messages', gid] });
+        }, 1000); // Đợi 1 giây sau sự kiện cuối cùng mới gọi API để tránh ddos/429
+      };
 
       socket.on('receiveGroupMessage', handleNewData);
       socket.on('newMessage', handleNewData); 
