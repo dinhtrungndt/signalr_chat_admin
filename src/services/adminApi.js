@@ -13,7 +13,9 @@ const adminApi = {
   getGroupDetail: (id) => axiosClient.get(`/admin/groups/${id}`),
   getGroupMessages: (id, page = 1) => axiosClient.get(`/admin/groups/${id}/messages?page=${page}&limit=50`),
   deleteGroup: (id) => axiosClient.delete(`/admin/groups/${id}`),
+  updateGroup: (id, data) => axiosClient.put(`/admin/groups/${id}`, data),
   addMember: (groupId, data) => axiosClient.post(`/admin/groups/${groupId}/members`, data),
+  updateMemberRole: (groupId, userId, data) => axiosClient.put(`/admin/groups/${groupId}/members/${userId}`, data),
   removeMember: (groupId, userId) => axiosClient.delete(`/admin/groups/${groupId}/members/${userId}`),
 
   // Messages

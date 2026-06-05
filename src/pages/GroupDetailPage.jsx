@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Users, MessageSquare, Trash2, UserPlus, UserMinus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Users, MessageSquare, Trash2, UserPlus, UserMinus, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import adminApi from '../services/adminApi';
@@ -282,6 +282,20 @@ const GroupDetailPage = () => {
     },
   });
 
+  const updateMemberRoleMutation = useMutation({
+    mutationFn: ({ userId, role }) => adminApi.updateMemberRole(gid, userId, { role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+    },
+  });
+
+  const updateGroupMutation = useMutation({
+    mutationFn: (data) => adminApi.updateGroup(gid, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+    },
+  });
+
   if (isLoading) return (
     <div className="p-8 text-center text-slate-500 dark:text-slate-400">Đang tải...</div>
   );
@@ -323,6 +337,7 @@ const GroupDetailPage = () => {
         {[
           { key: 'members', icon: Users, label: 'Thành viên' },
           { key: 'messages', icon: MessageSquare, label: 'Lịch sử chat' },
+          { key: 'settings', icon: Settings, label: 'Cài đặt quyền' },
         ].map(({ key, icon: Icon, label }) => (
           <button
             key={key}
@@ -339,9 +354,9 @@ const GroupDetailPage = () => {
 
       {/* ===== Members Tab ===== */}
       {tab === 'members' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden transition-colors">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl transition-colors">
           {/* Add member - Search autocomplete + Role picker */}
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700/30">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700/30 relative z-50 rounded-t-2xl">
             <div className="flex gap-3 items-end">
               {/* Search input + dropdown */}
               <div className="flex-1 relative" ref={searchRef}>
@@ -448,9 +463,9 @@ const GroupDetailPage = () => {
           )}
 
           {/* Member list */}
-          <div className="divide-y divide-slate-100 dark:divide-slate-700/30">
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/30 relative z-10">
             {members.map((m) => (
-              <div key={m.userId} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+              <div key={m.userId} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors last:rounded-b-2xl">
                 <div className="flex items-center gap-3">
                   {m.user?.avatar ? (
                     <img src={`${SOCKET_URL}${m.user.avatar}`} alt="" className="w-9 h-9 rounded-full object-cover" />
@@ -465,13 +480,20 @@ const GroupDetailPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    m.role === 'ADMIN' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400' :
-                    m.role === 'DEPUTY' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
-                    'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                  }`}>
-                    {m.role}
-                  </span>
+                  <select
+                    value={m.role}
+                    onChange={(e) => updateMemberRoleMutation.mutate({ userId: m.userId, role: e.target.value })}
+                    disabled={updateMemberRoleMutation.isPending}
+                    className={`text-xs px-2 py-1 rounded-lg font-medium outline-none cursor-pointer border-0 ${
+                      m.role === 'ADMIN' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 focus:ring-indigo-500' :
+                      m.role === 'DEPUTY' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 focus:ring-amber-500' :
+                      'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 focus:ring-slate-500'
+                    }`}
+                  >
+                    <option value="ADMIN">Quản trị viên (ADMIN)</option>
+                    <option value="DEPUTY">Phó nhóm (DEPUTY)</option>
+                    <option value="MEMBER">Thành viên (MEMBER)</option>
+                  </select>
                   {deletingMemberId === m.userId ? (
                     <div className="flex items-center gap-1">
                       <button onClick={() => removeMemberMutation.mutate(m.userId)} className="text-xs px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition">Xác nhận</button>
@@ -618,6 +640,58 @@ const GroupDetailPage = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ===== Settings Tab ===== */}
+      {tab === 'settings' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 transition-colors max-w-3xl">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Cài đặt Quyền Nhóm</h2>
+          
+          <div className="space-y-6">
+            {[
+              { id: 'isReadOnly', label: 'Chế độ Chỉ Đọc (Chỉ Quản trị viên mới được nhắn tin)', desc: 'Khi bật, các thành viên thường sẽ không thể gửi tin nhắn vào nhóm.' },
+              { id: 'canChangeGroupInfo', label: 'Cho phép đổi Tên & Ảnh nhóm', desc: 'Cho phép mọi thành viên thay đổi thông tin cơ bản của nhóm.' },
+              { id: 'canPinMessages', label: 'Cho phép Ghim tin nhắn', desc: 'Cho phép mọi thành viên ghim tin nhắn quan trọng.' },
+              { id: 'canCreateNotes', label: 'Cho phép Tạo Ghi chú & Nhắc hẹn', desc: 'Thành viên có thể tạo và quản lý ghi chú chung của nhóm.' },
+              { id: 'canCreatePolls', label: 'Cho phép Tạo Bình chọn', desc: 'Thành viên có thể tạo các cuộc bình chọn ý kiến.' },
+              { id: 'requireApproval', label: 'Phê duyệt thành viên mới', desc: 'Khi bật, thành viên mới phải được Quản trị viên duyệt mới được vào nhóm.' },
+              { id: 'joinerCanReadHistory', label: 'Thành viên mới đọc lịch sử', desc: 'Người mới vào nhóm có thể xem các tin nhắn đã gửi trước đó.' },
+            ].map(setting => (
+              <div key={setting.id} className="flex items-start justify-between gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                <div>
+                  <h3 className="font-medium text-slate-900 dark:text-white mb-1">{setting.label}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{setting.desc}</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={group?.[setting.id] || false}
+                    onChange={(e) => updateGroupMutation.mutate({ [setting.id]: e.target.checked })}
+                    disabled={updateGroupMutation.isPending}
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+            ))}
+
+            <div className="flex items-start justify-between gap-4 p-4 rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10 mt-8">
+              <div>
+                <h3 className="font-medium text-red-600 dark:text-red-400 mb-1">Trạng thái hoạt động</h3>
+                <p className="text-sm text-red-500/80 dark:text-red-400/80">Khóa nhóm sẽ ngăn chặn tất cả hành động và ẩn nhóm khỏi danh sách của thành viên.</p>
+              </div>
+              <select
+                value={group?.status || 'ACTIVE'}
+                onChange={(e) => updateGroupMutation.mutate({ status: e.target.value })}
+                disabled={updateGroupMutation.isPending}
+                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                <option value="INACTIVE">Khóa (INACTIVE)</option>
+              </select>
+            </div>
+          </div>
         </div>
       )}
     </div>

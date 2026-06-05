@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { io } from 'socket.io-client';
 import useAuthStore from './stores/useAuthStore';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -12,6 +13,9 @@ import AdminLayout from './components/AdminLayout';
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } }
 });
+
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+let socket = null;
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -31,9 +35,50 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const token = useAuthStore((s) => s.token);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   
   // Xác thực người dùng
   useEffect(() => { checkAuth(); }, [checkAuth]);
+
+  // Quản lý Socket.io connection cho realtime updates
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      if (!socket) {
+        socket = io(SOCKET_URL, {
+          auth: { token },
+          transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+          console.log('Admin socket connected');
+        });
+
+        // Lắng nghe các thay đổi từ hệ thống
+        socket.on('user_created', () => {
+          queryClient.invalidateQueries({ queryKey: ['admin_users'] });
+        });
+        socket.on('user_updated', () => {
+          queryClient.invalidateQueries({ queryKey: ['admin_users'] });
+        });
+        socket.on('user_deleted', () => {
+          queryClient.invalidateQueries({ queryKey: ['admin_users'] });
+        });
+        socket.on('group_deleted', () => {
+          queryClient.invalidateQueries({ queryKey: ['admin_groups'] });
+        });
+      }
+    } else {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount handled by global socket variable
+    };
+  }, [isAuthenticated, token]);
 
   // Lắng nghe cài đặt màu hệ thống và theme từ localStorage
   useEffect(() => {
