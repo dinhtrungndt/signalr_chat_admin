@@ -213,18 +213,28 @@ const GroupDetailPage = () => {
       socket = window.io(SOCKET_URL, {
         auth: { token },
         transports: ['websocket'],
+        forceNew: true
       });
 
       socket.on('connect', () => {
+        console.log('[AdminSocket] Connected! Joining group:', gid);
         socket.emit('joinNewGroupRoom', gid);
       });
 
+      if (socket.connected) {
+        console.log('[AdminSocket] Already connected! Joining group:', gid);
+        socket.emit('joinNewGroupRoom', gid);
+      }
+
       let timeoutId;
-      const handleNewData = () => {
+      const handleNewData = (data) => {
+        console.log('[AdminSocket] Received event data:', data);
         if (timeoutId) clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['admin-group-messages', gid] });
-        }, 1000); // Đợi 1 giây sau sự kiện cuối cùng mới gọi API để tránh ddos/429
+          console.log('[AdminSocket] Invalidating queries...');
+          queryClient.invalidateQueries({ queryKey: ['admin-group-messages'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+        }, 100); 
       };
 
       socket.on('receiveGroupMessage', handleNewData);
@@ -237,6 +247,10 @@ const GroupDetailPage = () => {
       socket.on('reminder_created', handleNewData);
       socket.on('reminder_updated', handleNewData);
       socket.on('reminder_deleted', handleNewData);
+      socket.on('group_messages_reset', () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-group-messages'] });
+        setPage(1);
+      });
     };
 
     if (window.io) {
@@ -286,6 +300,15 @@ const GroupDetailPage = () => {
     mutationFn: ({ userId, role }) => adminApi.updateMemberRole(gid, userId, { role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+    },
+  });
+
+  const resetMessagesMutation = useMutation({
+    mutationFn: () => adminApi.resetGroupMessages(gid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-group-messages', gid] });
+      queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+      setPage(1);
     },
   });
 
@@ -627,7 +650,16 @@ const GroupDetailPage = () => {
 
               {/* Pagination */}
               <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700/30 flex items-center justify-between bg-white dark:bg-slate-900 transition-colors">
-                <p className="text-slate-500 dark:text-slate-400 text-xs">Trang {page} / {msgData?.totalPages || 1} · {msgData?.total?.toLocaleString()} tin nhắn</p>
+                <div className="flex items-center gap-4">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">Trang {page} / {msgData?.totalPages || 1} · {msgData?.total?.toLocaleString()} tin nhắn</p>
+                  <button 
+                    onClick={() => { if(window.confirm('Bạn có chắc chắn muốn XÓA TRẮNG TOÀN BỘ tin nhắn và dữ liệu chat của nhóm này?\nHành động này không thể hoàn tác!')) resetMessagesMutation.mutate() }}
+                    disabled={resetMessagesMutation.isPending}
+                    className="text-xs px-2.5 py-1 text-red-500 hover:text-white border border-red-500 hover:bg-red-500 rounded-md transition"
+                  >
+                    {resetMessagesMutation.isPending ? 'Đang xóa...' : 'Xóa trắng tin nhắn'}
+                  </button>
+                </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700 transition">
                     <ChevronLeft className="w-4 h-4" />
