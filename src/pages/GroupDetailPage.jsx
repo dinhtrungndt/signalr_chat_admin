@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Users, MessageSquare, Trash2, UserPlus, UserMinus, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import adminApi from '../services/adminApi';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:1411';
 const formatTime = (d) => { try { return format(new Date(d), 'HH:mm dd/MM/yyyy', { locale: vi }); } catch { return ''; } };
 const formatShortTime = (d) => { try { return format(new Date(d), 'HH:mm', { locale: vi }); } catch { return ''; } };
+const formatRelativeTime = (d) => { try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; } };
 
 // ===== Render nội dung từng loại tin nhắn =====
 const MessageContent = ({ msg }) => {
@@ -198,7 +199,6 @@ const GroupDetailPage = () => {
 
   // --- Realtime Socket ---
   useEffect(() => {
-    if (tab !== 'messages') return;
 
     let socket = null;
     let checkInterval = null;
@@ -251,6 +251,44 @@ const GroupDetailPage = () => {
         queryClient.invalidateQueries({ queryKey: ['admin-group-messages'] });
         setPage(1);
       });
+
+      socket.on('userOnline', (uid) => {
+        console.log('[Admin Socket] userOnline received:', uid);
+        queryClient.setQueryData(['admin-group', gid], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            userGroups: old.userGroups.map(ug => 
+              String(ug.userId) === String(uid) ? {
+                ...ug,
+                user: {
+                  ...ug.user,
+                  deviceConnections: [{ isOnline: true, lastConnected: new Date().toISOString() }]
+                }
+              } : ug
+            )
+          };
+        });
+      });
+
+      socket.on('userOffline', ({ userId, lastSeen }) => {
+        console.log('[Admin Socket] userOffline received:', userId, lastSeen);
+        queryClient.setQueryData(['admin-group', gid], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            userGroups: old.userGroups.map(ug => 
+              String(ug.userId) === String(userId) ? {
+                ...ug,
+                user: {
+                  ...ug.user,
+                  deviceConnections: [{ isOnline: false, lastConnected: lastSeen }]
+                }
+              } : ug
+            )
+          };
+        });
+      });
     };
 
     if (window.io) {
@@ -266,7 +304,7 @@ const GroupDetailPage = () => {
         socket.disconnect();
       }
     };
-  }, [tab, gid, queryClient]);
+  }, [gid, queryClient]);
 
   // --- Mutations ---
   const deleteMsgMutation = useMutation({
@@ -496,21 +534,41 @@ const GroupDetailPage = () => {
 
           {/* Member list */}
           <div className="divide-y divide-slate-100 dark:divide-slate-700/30 relative z-10">
-            {members.map((m) => (
-              <div key={m.userId} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors last:rounded-b-2xl">
-                <div className="flex items-center gap-3">
-                  {m.user?.avatar ? (
-                    <img src={`${SOCKET_URL}${m.user.avatar}`} alt="" className="w-9 h-9 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-white font-semibold text-sm">
-                      {m.user?.fullName?.charAt(0)}
+            {members.map((m) => {
+              const device = m.user?.deviceConnections?.[0];
+              const isOnline = device?.isOnline;
+              const lastConnected = device?.lastConnected;
+
+              return (
+                <div key={m.userId} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors last:rounded-b-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      {m.user?.avatar ? (
+                        <img src={`${SOCKET_URL}${m.user.avatar}`} alt="" className="w-9 h-9 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-white font-semibold text-sm">
+                          {m.user?.fullName?.charAt(0)}
+                        </div>
+                      )}
+                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-slate-900 dark:text-white font-medium text-sm">{m.user?.fullName}</p>
-                    <p className="text-slate-500 text-xs">@{m.user?.username} · ID: {m.userId}</p>
+                    <div>
+                      <p className="text-slate-900 dark:text-white font-medium text-sm flex items-center gap-2">
+                        {m.user?.fullName}
+                        {!isOnline && lastConnected && (
+                          <span className="text-[10px] text-slate-400 font-normal bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            {formatRelativeTime(lastConnected)}
+                          </span>
+                        )}
+                        {isOnline && (
+                          <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                            Đang hoạt động
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-slate-500 text-xs">@{m.user?.username} · ID: {m.userId}</p>
+                    </div>
                   </div>
-                </div>
                 <div className="flex items-center gap-3">
                   <select
                     value={m.role}
@@ -538,7 +596,7 @@ const GroupDetailPage = () => {
                   )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       )}
