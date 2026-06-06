@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Trash2, Eye, Search, Users } from 'lucide-react';
+import { MessageSquare, Trash2, Eye, Search, Users, PowerOff, Power } from 'lucide-react';
 import adminApi from '../services/adminApi';
 
 const GroupsPage = () => {
@@ -22,6 +22,11 @@ const GroupsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       setDeletingId(null);
     },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => adminApi.updateGroup(id, { status }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-groups'] }),
   });
 
   const filtered = groups.filter(g =>
@@ -113,6 +118,25 @@ const GroupsPage = () => {
                         title="Xem chi tiết"
                       >
                         <Eye className="w-4 h-4" />
+                      </button>
+                      {/* Toggle Active / Inactive */}
+                      <button
+                        onClick={() => toggleStatusMutation.mutate({
+                          id: group.id,
+                          status: group.status !== 'INACTIVE' ? 'INACTIVE' : 'ACTIVE'
+                        })}
+                        disabled={toggleStatusMutation.isPending}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          group.status !== 'INACTIVE'
+                            ? 'text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:text-amber-400 dark:hover:bg-amber-900/20'
+                            : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
+                        }`}
+                        title={group.status !== 'INACTIVE' ? 'Vô hiệu hóa nhóm' : 'Kích hoạt nhóm'}
+                      >
+                        {group.status !== 'INACTIVE'
+                          ? <PowerOff className="w-4 h-4" />
+                          : <Power className="w-4 h-4" />
+                        }
                       </button>
                       {deletingId === group.id ? (
                         <div className="flex items-center gap-1">
