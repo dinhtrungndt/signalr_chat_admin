@@ -319,6 +319,15 @@ const GroupDetailPage = () => {
     },
   });
 
+  const deleteGroupMutation = useMutation({
+    mutationFn: () => adminApi.deleteGroup(gid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      navigate('/groups');
+    },
+  });
+
   if (isLoading) return (
     <div className="p-8 text-center text-slate-500 dark:text-slate-400">Đang tải...</div>
   );
@@ -723,6 +732,22 @@ const GroupDetailPage = () => {
                 <option value="INACTIVE">Khóa (INACTIVE)</option>
               </select>
             </div>
+
+            <div className="pt-6 border-t border-slate-200 dark:border-slate-700/50 flex justify-end">
+              <button 
+                onClick={() => {
+                  if(window.confirm('Bạn có CHẮC CHẮN muốn xóa vĩnh viễn nhóm này cùng toàn bộ dữ liệu (tin nhắn, bình chọn, ghi chú...)? Hành động này không thể hoàn tác!')) {
+                    deleteGroupMutation.mutate();
+                  }
+                }}
+                disabled={deleteGroupMutation.isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition font-medium flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {deleteGroupMutation.isPending ? 'Đang xóa...' : 'Xóa Vĩnh Viễn Nhóm Này'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
