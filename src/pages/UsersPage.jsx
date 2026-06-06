@@ -81,10 +81,23 @@ const EditUnitCodeModal = ({ user, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ['admin-groups'],
+    queryFn: () => adminApi.getAllGroups().then(r => r.data.data),
+    staleTime: 30000,
+  });
+
+  // Lọc các nhóm có mã đơn vị hợp lệ (code không phải dạng GRP_xxx), loại trùng
+  const unitCodes = [...new Set(
+    groups
+      .filter(g => g.code && !g.code.startsWith('GRP_'))
+      .map(g => g.code)
+  )].sort();
+
   const handleSave = async () => {
     setLoading(true); setError('');
     try {
-      await adminApi.updateUser(user.id, { unitCode: value || null });
+      await adminApi.updateUser(user.id, { unitCode: value.trim() || null });
       onSuccess();
       onClose();
     } catch (err) {
@@ -98,12 +111,46 @@ const EditUnitCodeModal = ({ user, onClose, onSuccess }) => {
       <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl p-6 transition-colors">
         <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Đổi mã đơn vị</h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">User: <span className="text-slate-900 dark:text-white font-medium">{user.fullName}</span></p>
+
         <input
           value={value}
           onChange={e => setValue(e.target.value)}
           className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors mb-3"
-          placeholder="Mã đơn vị (để trống = xóa)"
+          placeholder="Nhập hoặc chọn mã đơn vị bên dưới..."
         />
+
+        {/* Danh sách mã đơn vị hiện có */}
+        {unitCodes.length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-wider">Mã đơn vị hiện có</p>
+            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
+              {unitCodes.map(code => (
+                <button
+                  key={code}
+                  onClick={() => setValue(code)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all border ${
+                    value === code
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/30'
+                      : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700/50 hover:bg-indigo-100 dark:hover:bg-indigo-800/40'
+                  }`}
+                >
+                  {code}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Xóa mã đơn vị */}
+        {value && (
+          <button
+            onClick={() => setValue('')}
+            className="w-full mb-3 py-2 text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border border-red-200 dark:border-red-800/50 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            ✕ Xóa mã đơn vị
+          </button>
+        )}
+
         {error && <p className="text-red-600 dark:text-red-400 text-xs mb-3">{error}</p>}
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Hủy</button>
@@ -133,6 +180,7 @@ const UsersPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
       setDeletingId(null);
     },
   });
@@ -147,14 +195,21 @@ const UsersPage = () => {
       {showCreate && (
         <CreateUserModal
           onClose={() => setShowCreate(false)}
-          onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['admin-users'] }); queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] }); }}
+          onSuccess={() => { 
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] }); 
+            queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] }); 
+            queryClient.invalidateQueries({ queryKey: ['admin-groups'] }); 
+          }}
         />
       )}
       {editUser && (
         <EditUnitCodeModal
           user={editUser}
           onClose={() => setEditUser(null)}
-          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-users'] })}
+          onSuccess={() => { 
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] }); 
+            queryClient.invalidateQueries({ queryKey: ['admin-groups'] }); 
+          }}
         />
       )}
 

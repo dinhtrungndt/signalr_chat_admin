@@ -319,6 +319,7 @@ const GroupDetailPage = () => {
     mutationFn: ({ username, role }) => adminApi.addMember(gid, { username, role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
       setAddSearchQuery('');
       setAddSelectedUser(null);
       setAddRole('MEMBER');
@@ -330,6 +331,7 @@ const GroupDetailPage = () => {
     mutationFn: (userId) => adminApi.removeMember(gid, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
       setDeletingMemberId(null);
     },
   });
@@ -338,6 +340,7 @@ const GroupDetailPage = () => {
     mutationFn: ({ userId, role }) => adminApi.updateMemberRole(gid, userId, { role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-group', gid] });
+      queryClient.invalidateQueries({ queryKey: ['admin-groups'] });
     },
   });
 
