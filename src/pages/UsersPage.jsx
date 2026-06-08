@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, Plus, Trash2, Edit2, Search, X, Check, UserCheck, UserX } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import adminApi from '../services/adminApi';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:1411';
 const formatDate = (d) => { try { return format(new Date(d), 'dd/MM/yyyy', { locale: vi }); } catch { return '—'; } };
+const formatRelativeTime = (d) => { try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; } };
 
 const CreateUserModal = ({ onClose, onSuccess }) => {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm();
@@ -190,6 +191,62 @@ const UsersPage = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
   });
 
+  useEffect(() => {
+    let socket = null;
+    let checkInterval = null;
+
+    const initSocket = () => {
+      if (!window.io) return;
+      if (checkInterval) clearInterval(checkInterval);
+
+      const token = localStorage.getItem('dvn_admin_token');
+      if (!token) return;
+
+      socket = window.io(SOCKET_URL, {
+        auth: { token },
+        transports: ['websocket'],
+        forceNew: true
+      });
+
+      socket.on('userOnline', (uid) => {
+        queryClient.setQueryData(['admin-users', search], (old) => {
+          if (!old) return old;
+          return old.map(u => 
+            String(u.id) === String(uid) ? {
+              ...u,
+              deviceConnections: [{ isOnline: true, lastConnected: new Date().toISOString() }]
+            } : u
+          );
+        });
+      });
+
+      socket.on('userOffline', ({ userId, lastSeen }) => {
+        queryClient.setQueryData(['admin-users', search], (old) => {
+          if (!old) return old;
+          return old.map(u => 
+            String(u.id) === String(userId) ? {
+              ...u,
+              deviceConnections: [{ isOnline: false, lastConnected: lastSeen }]
+            } : u
+          );
+        });
+      });
+    };
+
+    if (window.io) {
+      initSocket();
+    } else {
+      checkInterval = setInterval(initSocket, 500);
+    }
+    
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [search, queryClient]);
+
   return (
     <div className="p-6 lg:p-8">
       {showCreate && (
@@ -260,19 +317,39 @@ const UsersPage = () => {
                 <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">Đang tải...</td></tr>
               ) : users.length === 0 ? (
                 <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">Không có user nào</td></tr>
-              ) : users.map((u) => (
+              ) : users.map((u) => {
+                const device = u.deviceConnections?.[0];
+                const isOnline = device?.isOnline;
+                const lastConnected = device?.lastConnected;
+
+                return (
                 <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      {u.avatar ? (
-                        <img src={`${SOCKET_URL}${u.avatar}`} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-white font-semibold text-sm flex-shrink-0">
-                          {u.fullName?.charAt(0)}
-                        </div>
-                      )}
+                      <div className="relative">
+                        {u.avatar ? (
+                          <img src={`${SOCKET_URL}${u.avatar}`} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-white font-semibold text-sm flex-shrink-0">
+                            {u.fullName?.charAt(0)}
+                          </div>
+                        )}
+                        <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
+                      </div>
                       <div>
-                        <p className="text-slate-900 dark:text-white font-medium">{u.fullName}</p>
+                        <p className="text-slate-900 dark:text-white font-medium flex items-center gap-2">
+                          {u.fullName}
+                          {!isOnline && lastConnected && (
+                            <span className="text-[10px] text-slate-400 font-normal bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded whitespace-nowrap">
+                              {formatRelativeTime(lastConnected)}
+                            </span>
+                          )}
+                          {isOnline && (
+                            <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded whitespace-nowrap">
+                              Đang hoạt động
+                            </span>
+                          )}
+                        </p>
                         <p className="text-slate-500 text-xs">@{u.username} · ID: {u.id}</p>
                       </div>
                     </div>
@@ -298,24 +375,24 @@ const UsersPage = () => {
                   </td>
                   <td className="px-6 py-4 text-center">
                     {u.isSystemAdmin ? (
-                      <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400">System Admin</span>
+                      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 rounded-full font-medium"><UserCheck className="w-3.5 h-3.5" /> System Admin</span>
                     ) : (
-                      <span className="text-xs text-slate-500 dark:text-slate-600">User</span>
+                      <span className="text-xs px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full font-medium">Người dùng</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">{formatDate(u.createdAt)}</td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-1">
-                      {/* Toggle status */}
+                    <p className="text-sm text-slate-900 dark:text-white">{formatDate(u.createdAt)}</p>
+                    <p className="text-xs text-slate-500">{u._count?.userGroups || 0} nhóm</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => toggleStatusMutation.mutate({ id: u.id, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                        className={`p-1.5 rounded-lg transition-colors ${u.status === 'ACTIVE' ? 'text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:text-amber-400 dark:hover:bg-amber-900/20' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20'}`}
-                        title={u.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                        className={`p-1.5 rounded-lg transition-colors ${u.status === 'ACTIVE' ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30' : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'}`}
+                        title={u.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
                       >
                         {u.status === 'ACTIVE' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
-
-                      {/* Delete */}
                       {deletingId === u.id ? (
                         <div className="flex items-center gap-1">
                           <button onClick={() => deleteMutation.mutate(u.id)} className="p-1.5 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors" disabled={deleteMutation.isPending}>
@@ -333,7 +410,7 @@ const UsersPage = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
