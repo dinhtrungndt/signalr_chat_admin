@@ -1,20 +1,20 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import useAuthStore from './stores/useAuthStore';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import GroupsPage from './pages/GroupsPage';
-import GroupDetailPage from './pages/GroupDetailPage';
-import UsersPage from './pages/UsersPage';
 import AdminLayout from './components/AdminLayout';
+import DashboardPage from './pages/DashboardPage';
+import GroupDetailPage from './pages/GroupDetailPage';
+import GroupsPage from './pages/GroupsPage';
+import LoginPage from './pages/LoginPage';
+import UsersPage from './pages/UsersPage';
+import useAuthStore from './stores/useAuthStore';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } }
 });
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:1411';
 let socket = null;
 
 const ProtectedRoute = ({ children }) => {
@@ -37,7 +37,7 @@ function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
   const token = useAuthStore((s) => s.token);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  
+
   // Xác thực người dùng
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -83,11 +83,11 @@ function App() {
   // Lắng nghe cài đặt màu hệ thống và theme từ localStorage
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const applyTheme = () => {
       const savedTheme = localStorage.getItem('dvn_admin_theme') || 'system';
       const isDark = savedTheme === 'dark' || (savedTheme === 'system' && mediaQuery.matches);
-      
+
       if (isDark) {
         document.documentElement.classList.add('dark');
       } else {
@@ -96,11 +96,11 @@ function App() {
     };
 
     applyTheme(); // Lần đầu tải trang
-    
+
     // Lắng nghe sự kiện đổi theme thủ công từ component khác
     window.addEventListener('theme_changed', applyTheme);
     mediaQuery.addEventListener('change', applyTheme); // Khi hệ thống đổi màu
-    
+
     return () => {
       window.removeEventListener('theme_changed', applyTheme);
       mediaQuery.removeEventListener('change', applyTheme);

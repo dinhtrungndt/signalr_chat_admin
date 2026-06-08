@@ -247,6 +247,9 @@ const GroupDetailPage = () => {
       socket.on('reminder_created', handleNewData);
       socket.on('reminder_updated', handleNewData);
       socket.on('reminder_deleted', handleNewData);
+      socket.on('group_readonly_changed', handleNewData);
+      socket.on('group_settings_updated', handleNewData);
+      socket.on('group_info_updated', handleNewData);
       socket.on('group_messages_reset', () => {
         queryClient.invalidateQueries({ queryKey: ['admin-group-messages'] });
         setPage(1);
